@@ -1,0 +1,11 @@
+export type Role = "owner" | "editor" | "viewer";
+export type StepType = "llm_call" | "http_request" | "db_write" | "notify" | "conditional_branch" | "approval_gate";
+export type TriggerType = "manual" | "webhook" | "scheduled" | "database_event";
+export type RunStatus = "pending" | "running" | "paused" | "completed" | "failed";
+export type StepRunStatus = RunStatus;
+export type Org = { id:string; name:string; quota_limit:number; quota_used:number };
+export type Member = { id:string; org_id:string; user_id:string; role:Role };
+export type Step = { id:string; position:number; type:StepType; config:Record<string, unknown> };
+export type Trigger = { id:string; type:TriggerType; config:Record<string, unknown>; enabled:boolean };
+export type Workflow = { id:string; org_id:string; name:string; description:string|null; created_at:string; updated_at:string; workflow_steps:Step[]; workflow_triggers:Trigger[]; workflow_runs:Array<{id:string;status:RunStatus;trigger_type:TriggerType;created_at:string;completed_at:string|null}> };
+export type StepRun = { id:string; workflow_run_id:string; workflow_step_id:string; status:StepRunStatus; input:any; output:any; error:string|null; attempt_count:number; approved_by:string|null; approved_at:string|null; started_at:string|null; completed_at:string|null };

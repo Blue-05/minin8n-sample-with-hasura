@@ -1,0 +1,11 @@
+export const CREATE_WORKFLOW = `mutation CreateWorkflow($object:workflows_insert_input!){ insert_workflows_one(object:$object){id name org_id description} }`;
+export const UPDATE_WORKFLOW = `mutation UpdateWorkflow($id:uuid!,$changes:workflows_set_input!){ update_workflows_by_pk(pk_columns:{id:$id},_set:$changes){id name description updated_at} }`;
+export const DELETE_WORKFLOW = `mutation DeleteWorkflow($id:uuid!){ delete_workflows_by_pk(id:$id){id} }`;
+export const CREATE_STEP = `mutation CreateStep($object:workflow_steps_insert_input!){insert_workflow_steps_one(object:$object){id position type config}}`;
+export const UPDATE_STEP = `mutation UpdateStep($id:uuid!,$changes:workflow_steps_set_input!){update_workflow_steps_by_pk(pk_columns:{id:$id},_set:$changes){id position type config}}`;
+export const DELETE_STEP = `mutation DeleteStep($id:uuid!){delete_workflow_steps_by_pk(id:$id){id}}`;
+export const CREATE_TRIGGER = `mutation CreateTrigger($object:workflow_triggers_insert_input!){insert_workflow_triggers_one(object:$object){id type config enabled}}`;
+export const UPDATE_TRIGGER = `mutation UpdateTrigger($id:uuid!,$changes:workflow_triggers_set_input!){update_workflow_triggers_by_pk(pk_columns:{id:$id},_set:$changes){id type config enabled}}`;
+export const DELETE_TRIGGER = `mutation DeleteTrigger($id:uuid!){delete_workflow_triggers_by_pk(id:$id){id}}`;
+export const TRIGGER_RUN = `mutation TriggerWorkflowRun($workflow_id:uuid!){triggerWorkflowRun(workflow_id:$workflow_id){success workflow_run_id status error}}`;
+export const APPROVE_STEP = `mutation ApproveStep($step_run_id:uuid!){approveStep(step_run_id:$step_run_id){success workflow_run_id status error}}`;

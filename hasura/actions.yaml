@@ -1,0 +1,21 @@
+- name: triggerWorkflowRun
+  definition:
+    kind: synchronous
+    type: mutation
+    handler: https://mlimswxxskorovtgheqc.functions.ap-south-1.nhost.run/v1/triggerWorkflowRun
+    forward_client_headers: true
+    arguments:
+      - name: workflow_id
+        type: uuid!
+    output_type: TriggerWorkflowRunOutput
+
+- name: approveStep
+  definition:
+    kind: synchronous
+    type: mutation
+    handler: https://mlimswxxskorovtgheqc.functions.ap-south-1.nhost.run/v1/approveStep
+    forward_client_headers: true
+    arguments:
+      - name: step_run_id
+        type: uuid!
+    output_type: ApproveStepOutput

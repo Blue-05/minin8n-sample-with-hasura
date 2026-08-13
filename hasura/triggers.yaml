@@ -1,0 +1,9 @@
+# Runtime trigger configuration.
+# The workflowWebhook endpoint is intentionally generic: the trigger row's UUID
+# is passed as `trigger_id`, so each workflow can have its own webhook without
+# creating a new Hasura Action for every workflow.
+webhook_endpoint: https://mlimswxxskorovtgheqc.functions.ap-south-1.nhost.run/v1/workflowWebhook?trigger_id=<workflow_trigger_uuid>
+
+# Optional database event trigger: track workflow_notifications or another
+# watched table in Hasura, then point the Event Trigger webhook to:
+# https://mlimswxxskorovtgheqc.functions.ap-south-1.nhost.run/v1/databaseEvent

@@ -1,0 +1,5 @@
+import { Request, Response } from "express";
+import { gql, jsonResponse } from "./_shared";
+import { createRun } from "./engine";
+const Q=`query($id:uuid!){workflow_triggers_by_pk(id:$id){id type enabled workflow{ id org_id name workflow_steps(order_by:{position:asc}){id position type config}}}}`;
+export default async function databaseEvent(req:Request,res:Response){try{const id=String(req.body?.event?.data?.new?.workflow_trigger_id||req.body?.trigger_id||"");if(!id)return jsonResponse(res,400,{error:"trigger_id required"});const q=await gql<any>(Q,{id});const t=q.workflow_triggers_by_pk;if(!t||t.type!=="database_event"||!t.enabled)return jsonResponse(res,404,{error:"Database event trigger not found"});const result=await createRun(t.workflow,"database_event",req.body);return jsonResponse(res,200,{success:result.result.status!=="failed",workflow_run_id:result.runId,status:result.result.status,error:result.result.error??null});}catch(e:any){return jsonResponse(res,500,{success:false,error:e.message})}}
