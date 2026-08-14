@@ -1,13 +1,114 @@
 "use client";
-import {useEffect,useMemo,useState} from "react";import {useParams,useRouter} from "next/navigation";import {useAuth} from "../../../lib/nhost/AuthProvider";import {gql} from "../../../lib/graphql";import {WORKFLOW_QUERY,MEMBERS_QUERY,STEP_RUNS_QUERY} from "../../../lib/queries";import {CREATE_STEP,UPDATE_STEP,DELETE_STEP,UPDATE_WORKFLOW,CREATE_TRIGGER,DELETE_TRIGGER,TRIGGER_RUN,APPROVE_STEP} from "../../../lib/mutations";import {subscribeStepRuns} from "../../../lib/subscription";import type {Member,Workflow,Step,StepType,TriggerType,StepRun,Role} from "../../../lib/types";
+import {useEffect,useState} from "react";
+import {useParams,useRouter} from "next/navigation";
+import {useAuth} from "../../../lib/nhost/AuthProvider";
+import {gql} from "../../../lib/graphql";
+import {WORKFLOW_QUERY,MEMBERS_QUERY,STEP_RUNS_QUERY} from "../../../lib/queries";
+import {CREATE_STEP,UPDATE_STEP,DELETE_STEP,UPDATE_WORKFLOW,CREATE_TRIGGER,DELETE_TRIGGER,TRIGGER_RUN,APPROVE_STEP} from "../../../lib/mutations";
+import {subscribeStepRuns} from "../../../lib/subscription";
+import type {Member,Workflow,Step,StepType,StepRun} from "../../../lib/types";
 
-const defaults:Record<StepType,Record<string,unknown>>={llm_call:{prompt:"Return a concise answer to: {{input}}",model:"llama-3.1-8b-instant"},http_request:{method:"GET",url:"https://httpbin.org/get"},db_write:{table:"workflow_results",note:"This step is intentionally owner-only."},notify:{message:"Workflow completed: {{workflow_run_id}}"},conditional_branch:{field:"text",operator:"contains",value:"yes",then:"continue",else:"skip"},approval_gate:{message:"Approval required before continuing."}};
-function pretty(o:any){try{return JSON.stringify(o,null,2)}catch{return String(o)}}
-export default function WorkflowDetail(){const {id}=useParams<{id:string}>();const router=useRouter();const {user,loading}=useAuth();const [workflow,setWorkflow]=useState<Workflow|null>(null);const [members,setMembers]=useState<Member[]>([]);const [error,setError]=useState("");const [runId,setRunId]=useState<string|null>(null);const [stepRuns,setStepRuns]=useState<StepRun[]>([]);const [busy,setBusy]=useState(false);const [editing,setEditing]=useState(false);const [name,setName]=useState("");const [desc,setDesc]=useState("");
-async function load(){try{const [w,m]=await Promise.all([gql<{workflows_by_pk:Workflow|null}>(WORKFLOW_QUERY,{id}),gql<{org_members:Member[]}>(MEMBERS_QUERY)]);if(!w.workflows_by_pk){setError("Workflow not found or not visible to this user.");return}setWorkflow(w.workflows_by_pk);setName(w.workflows_by_pk.name);setDesc(w.workflows_by_pk.description||"");setMembers(m.org_members);const latest=w.workflows_by_pk.workflow_runs[0];if(latest){setRunId(latest.id);const s=await gql<{step_runs:StepRun[]}>(STEP_RUNS_QUERY,{runId:latest.id});setStepRuns(s.step_runs)}}catch(e:any){setError(e.message)}}
+const defaults:Record<StepType,Record<string,unknown>>={
+  llm_call:{
+    prompt:"Return a concise answer to: {{input}}",
+    model:"llama-3.1-8b-instant"},
+    http_request:{
+      method:"GET",url:"https://httpbin.org/get"
+    },
+    db_write:{
+      table:"workflow_results",
+      note:"This step is intentionally owner-only."},
+      notify:{message:"Workflow completed: {{workflow_run_id}}"},
+      conditional_branch:{
+        field:"text",operator:"contains",
+        value:"yes",then:"continue",else:"skip"}
+        ,approval_gate:{message:"Approval required before continuing."}
+      };
+
+
+function pretty(o:any)
+{try{return JSON.stringify(o,null,2)}catch{return String(o)}}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
+
+  return "An unexpected error occurred.";
+}
+
+export default function WorkflowDetail(){
+  const {id}=useParams<{id:string}>();
+  const router=useRouter();
+  const {user,loading}=useAuth();
+  const [workflow,setWorkflow]=useState<Workflow|null>(null);
+  const [members,setMembers]=useState<Member[]>([]);
+  const [error,setError]=useState("");
+  const [runId,setRunId]=useState<string|null>(null);
+  const [stepRuns,setStepRuns]=useState<StepRun[]>([]);
+  const [busy,setBusy]=useState(false);
+  const [editing,setEditing]=useState(false);
+  const [name,setName]=useState("");
+  const [desc,setDesc]=useState("");
+
+
+  async function load(){
+    try{
+      setError("");
+      const [w,m]=await Promise.all(
+        [gql<{workflows_by_pk:Workflow|null}>(WORKFLOW_QUERY,{id}),
+        gql<{org_members:Member[]}>(MEMBERS_QUERY)]);
+        if(!w.workflows_by_pk){setError("Workflow not found or not visible to this user.");
+          return}
+          
+          setWorkflow(w.workflows_by_pk);
+          setName(w.workflows_by_pk.name);
+          setDesc(w.workflows_by_pk.description||"");
+          setMembers(m.org_members);
+          const latest=w.workflows_by_pk.workflow_runs[0];
+          if(latest)
+            {setRunId(latest.id);
+            const s=await gql<{step_runs:StepRun[]}>(STEP_RUNS_QUERY,{runId:latest.id});
+            setStepRuns(s.step_runs)}}
+            
+            catch (error: unknown) {
+  setError(getErrorMessage(error));
+}}
+
+
+
 useEffect(()=>{if(!loading&&!user)router.replace("/login");if(user)load()},[loading,user,id]);
-useEffect(()=>{if(!runId)return;const dispose=subscribeStepRuns<{step_runs:StepRun[]}>(runId,v=>setStepRuns(v.step_runs),e=>setError(String(e)));return ()=>dispose()},[runId]);
+useEffect(() => {
+  if (!runId) return;
+
+  const dispose = subscribeStepRuns<{ step_runs: StepRun[] }>(
+    runId,
+    (value) => {
+      setStepRuns(value.step_runs);
+    },
+    (err) => {
+      console.warn("Step-runs subscription unavailable:", err);
+    }
+  );
+
+  return () => dispose();
+}, [runId]);
 const role=(workflow&&user)?members.find(m=>m.org_id===workflow.org_id&&m.user_id===user.id)?.role:null;const canEdit=role==="owner"||role==="editor";const isOwner=role==="owner";const latest=workflow?.workflow_runs[0];
+
+
 async function addStep(type: StepType) {
   if (!workflow) return;
 
@@ -31,8 +132,8 @@ async function addStep(type: StepType) {
     });
 
     await load();
-  } catch (e: any) {
-    setError(e.message);
+  } catch (e: unknown) {
+    setError(getErrorMessage(e));
   }
 }
 async function updateStep(s:Step,config:string){try{await gql(UPDATE_STEP,{id:s.id,changes:{config:JSON.parse(config)}});await load()}catch(e:any){setError("Config must be valid JSON: "+e.message)}}

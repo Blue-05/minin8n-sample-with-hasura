@@ -9,14 +9,20 @@ export default function Navigation() {
   const router = useRouter();
 
   async function handleSignOut() {
-    try {
-      await nhost.auth.signOut({});
-    } catch (error) {
-      console.error("Sign out failed:", error);
-    } finally {
-      router.push("/login");
+  try {
+    const session = nhost.getUserSession();
+
+    if (session?.refreshToken) {
+      await nhost.auth.signOut({
+        refreshToken: session.refreshToken,
+      });
     }
+  } catch (error) {
+    console.error("Sign out failed:", error);
+  } finally {
+    router.push("/login");
   }
+}
 
   return (
     <nav className="nav">
