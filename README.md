@@ -1,3 +1,6 @@
+### Deployment Link
+https://minin8n-sample-with-hasura.vercel.app/
+
 ## Features
 
 - User authentication with Nhost Auth
